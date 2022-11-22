@@ -1,0 +1,31 @@
+FROM nvidia/cuda:11.7.0-runtime-ubuntu18.04
+ARG DEBIAN_FRONTEND=noninteractive
+
+#install python3.8
+RUN apt-get update
+RUN apt-get install software-properties-common -y
+RUN add-apt-repository ppa:deadsnakes/ppa -y
+RUN apt-get update
+RUN apt-get install python3.8 -y 
+RUN apt-get install python3.8-distutils -y
+RUN apt-get install python3.8-tk -y
+RUN apt-get install curl -y
+RUN curl https://bootstrap.pypa.io/get-pip.py -o get-pip.py
+RUN python3.8 get-pip.py
+RUN rm get-pip.py
+
+# install requirements
+RUN apt-get install ffmpeg git -y
+COPY ./requirements/_requirements_base.txt /opt/
+COPY ./requirements/requirements_nvidia.txt /opt/
+RUN python3.8 -m pip --no-cache-dir install -r /opt/requirements_nvidia.txt && rm /opt/_requirements_base.txt && rm /opt/requirements_nvidia.txt
+
+RUN python3.8 -m pip install jupyter matplotlib tqdm
+RUN python3.8 -m pip install jupyter_http_over_ws
+RUN python3.8 -m pip install --upgrade jupyter_contrib_nbextensions jupyterlab-git
+RUN python3.8 -m pip install nbconvert jupyter jupyterlab
+RUN jupyter serverextension enable --py jupyter_http_over_ws
+RUN alias python=python3.8
+RUN echo "alias python=python3.8" >> /root/.bashrc
+WORKDIR "/notebooks"
+CMD ["jupyter lab --allow-root --ip=0.0.0.0 --no-browser --ServerApp.trust_xheaders=True --ServerApp.disable_check_xsrf=False --ServerApp.allow_remote_access=True --ServerApp.allow_origin='*' --ServerApp.allow_credentials=True"]
